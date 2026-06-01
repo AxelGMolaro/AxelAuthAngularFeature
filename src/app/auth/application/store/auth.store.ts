@@ -1,11 +1,17 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { FirebaseAuthRepository } from '../../infraestructure/firebase/firebase-auth.repository';
+import {
+  Injectable,
+  signal,
+  computed,
+  inject
+} from '@angular/core';
+import { AUTH_REPOSITORY } from '../../core/config/auth.tokens';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthStore {
-  private repo = inject(FirebaseAuthRepository);
+  private repo = inject(AUTH_REPOSITORY);
 
   private state = signal({
     user: this.repo.getCurrentUser(),
@@ -13,18 +19,19 @@ export class AuthStore {
     error: null as string | null
   });
 
-  user = computed(() => this.state().user);
-  loading = computed(() => this.state().loading);
-  error = computed(() => this.state().error);
-  isAuthenticated = computed(() => !!this.user());
+  readonly user = computed(() => this.state().user);
+  readonly loading = computed(() => this.state().loading);
+  readonly error = computed(() => this.state().error);
+  readonly isAuthenticated = computed(() => !!this.user());
 
   async login(email: string, password: string) {
     this.setLoading(true);
+    this.setError(null);
 
     try {
       await this.repo.login(email, password);
       this.refreshUser();
-    } catch (error) {
+    } catch {
       this.setError('Login failed');
     } finally {
       this.setLoading(false);
@@ -37,17 +44,23 @@ export class AuthStore {
   }
 
   private refreshUser() {
-    this.state.update(s => ({
-      ...s,
+    this.state.update(state => ({
+      ...state,
       user: this.repo.getCurrentUser()
     }));
   }
 
-  private setLoading(value: boolean) {
-    this.state.update(s => ({ ...s, loading: value }));
+  private setLoading(loading: boolean) {
+    this.state.update(state => ({
+      ...state,
+      loading
+    }));
   }
 
   private setError(error: string | null) {
-    this.state.update(s => ({ ...s, error }));
+    this.state.update(state => ({
+      ...state,
+      error
+    }));
   }
 }
